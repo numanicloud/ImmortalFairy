@@ -1939,6 +1939,7 @@ BattleManager.setup = function(troopId, canEscape, canLose) {
     $gameTroop.setup(troopId);
     $gameScreen.onBattleStart();
     this.makeEscapeRatio();
+    console.log("BattleManager.setup");
 };
 
 BattleManager.initMembers = function() {
@@ -2148,6 +2149,7 @@ BattleManager.startBattle = function() {
     $gameParty.onBattleStart();
     $gameTroop.onBattleStart();
     this.displayStartMessages();
+    console.log("startBattle");
 };
 
 BattleManager.displayStartMessages = function() {

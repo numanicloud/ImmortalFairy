@@ -53,7 +53,6 @@
             eventOnAttacked_currentAttackeeId = this._enemyId;
             var meta = $dataEnemies[this._enemyId].meta["CommonEv"];
             commonEventNumber = Number(meta);
-            alert("meta: " + meta + ", value = " + $gameVariables.value(2));
         } else if(this instanceof Game_Actor) {
             eventOnAttacked_currentAttackeeId = this._actorId;
             var meta = $dataActors[this._actorId].meta["CommonEv"];
