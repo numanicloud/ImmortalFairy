@@ -19,6 +19,6 @@
         // メタタグからステートIDを読み込み
         var stateId = this.enemy().meta["State"];
         
-        this.addState(stateId);
+        this.addState(Number(stateId));
     }
  })();

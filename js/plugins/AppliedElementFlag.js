@@ -27,6 +27,66 @@
  * @desc 基本属性のID。`5`と逆属性で、`2` `4`と同相。
  * @default 6
  * 
+ * @param ActorsModeState1
+ * @desc プレイヤー側の属性モード1。
+ * PrimalElement1に対応する属性。
+ * @default 
+ * 
+ * @param ActorsModeState2
+ * @desc プレイヤー側の属性モード2。
+ * PrimalElement2に対応する属性。
+ * @default 
+ * 
+ * @param ActorsModeState3
+ * @desc プレイヤー側の属性モード3。
+ * PrimalElement3に対応する属性。
+ * @default 
+ * 
+ * @param ActorsModeState4
+ * @desc プレイヤー側の属性モード4。
+ * PrimalElement4に対応する属性。
+ * @default 
+ * 
+ * @param ActorsModeState5
+ * @desc プレイヤー側の属性モード5。
+ * PrimalElement5に対応する属性。
+ * @default 
+ * 
+ * @param ActorsModeState6
+ * @desc プレイヤー側の属性モード6。
+ * PrimalElement6に対応する属性。
+ * @default 
+ * 
+ * @param EnemiesModeState1
+ * @desc 敵側の属性モード1。
+ * PrimalElement1に対応する属性。
+ * @default 
+ * 
+ * @param EnemiesModeState2
+ * @desc 敵側の属性モード2。
+ * PrimalElement2に対応する属性。
+ * @default 
+ * 
+ * @param EnemiesModeState3
+ * @desc 敵側の属性モード3。
+ * PrimalElement3に対応する属性。
+ * @default 
+ * 
+ * @param EnemiesModeState4
+ * @desc 敵側の属性モード4。
+ * PrimalElement4に対応する属性。
+ * @default 
+ * 
+ * @param EnemiesModeState5
+ * @desc 敵側の属性モード5。
+ * PrimalElement5に対応する属性。
+ * @default 
+ * 
+ * @param EnemiesModeState6
+ * @desc 敵側の属性モード6。
+ * PrimalElement6に対応する属性。
+ * @default 
+ * 
  * @param DeconstructMap1
  * @desc 複合属性を分解するとどの属性になるかをマップします。
  * カンマ区切りで、1番目の属性を分解すると2番目以降の属性になります。
@@ -127,8 +187,18 @@ class ParameterRepository {
         this.deconstructRule = {};   // 1はじまり
         this.primalElements = new Array(6 + 1);     // 1はじまり
         this.elementTable = {};
+        this.actorsStateId = new Array(6 + 1);
+        this.enemiesStateId = new Array(6 + 1);
         this.loadElements();
         this.loadDeconstructRule();
+        this.loadStates();
+    }
+
+    loadStates() {
+        for (var i = 1; i <= 6; ++i) {
+            this.actorsStateId[i] = this.parameters["ActorsModeState" + i];
+            this.enemiesStateId[i] = this.parameters["EnemiesModeState" + i];
+        }
     }
 
     loadDeconstructRule() {
@@ -181,74 +251,14 @@ class ParameterRepository {
     }
 }
 
+class BattlersTolerantKnowledge {
+    constructor(battler) {
+    }
+}
+
 class ToleranceKnowledge {
     constructor(parameterRepository) {
         this.parameterRepository = parameterRepository;
-    }
-
-    updateAi(enemy, item, actor) {
-        if (!(actor instanceof Game_Actor)) return;
-        if (item.damage.elementId == 0) return;
-
-        var elements = this.parameterRepository.deconstruct(item.damage.elementId);
-
-        // 得られた属性に対応するスイッチをオンにする
-        elements.forEach(e => {
-            var table = this.parameterRepository.elementTable["E" + e];
-            var states = actor.states();
-
-            // 弱点・抵抗・どちらでもない場合それぞれのスイッチ番号を調べる
-            var switchId = tryGetWeaknessSwitch(actor, table);
-            if (switchId == null) {
-                switchId = tryGetResistenceSwitch(actor, table);
-            }
-            if (switchId == null) {
-                switchId = getFallbackedSwitch(actor, table);
-            }
-
-            $gameSwitches.setValue(switchId, true);
-        });
-
-        exportLog(actor);
-    }
-
-    exportLog(actor, item) {
-        getLogItem = function(metaName, displayName) {
-            return $gameSwitches.value($dataActors[actor._actorId].meta[metaName]) ? displayName : "";
-        }
-
-        var log = item.name + " applied to " + actor.name() + ";";
-        log += getLogItem.call(this, "weak1", "打撃弱点, ");
-        log += getLogItem.call(this, "weak2", "切削弱点, ");
-        log += getLogItem.call(this, "weak3", "燃焼弱点, ");
-        log += getLogItem.call(this, "weak4", "冷却弱点, ");
-        log += getLogItem.call(this, "weak5", "中毒弱点, ");
-        log += getLogItem.call(this, "weak6", "呪霊弱点, ");
-        log += getLogItem.call(this, "notWeak1", "打撃非弱点, ");
-        log += getLogItem.call(this, "notWeak3", "燃焼非弱点, ");
-        log += getLogItem.call(this, "notWeak5", "中毒非弱点, ");
-
-        console.log(log);
-    }
-
-    tryGetWeaknessSwitch(actor, table) {
-        var state = actor.states().find(st => st.meta["ElementMode"] == table.weakModeMeta);
-        if (state != undefined) {
-            return $dataActors[actor._actorId].meta[table.weakSwitchId];
-        }
-        return null;
-    }
-
-    tryGetResistenceSwitch(actor, table) {
-        var state = actor.states().find(st => st.meta["ElementMode"] == table.resistModeMeta);
-        if (state != undefined) {
-            return $dataActors[actor._actorId].meta[table.resistSwitchId];
-        }
-        return null;
-    }
-
-    getFallbackedSwitch(actor, table) {
-        return $dataActors[actor._actorId].meta[table.missSwitchId];
     }
 }
 
@@ -322,27 +332,47 @@ class MagicLevelCalculator {
         "\\I[70]\\C[4]呪霊属性 (逆:\\I[02])",
     ];
 
-    var changeMode = function(subject) {
+    // 味方のモードチェンジスキル
+    var changeMode = function(subject, log) {
         $gameMessage.add("\\>どの属性モードに遷移しますか？\n\\>遷移した属性に抵抗を持ち、逆の属性に弱点を持ちます。\n\\>遷移した属性の魔法を使ったときに\n\\>効き目レベルが+1されます。");
         $gameMessage.setChoices(modeChangeChocices, -1, -1);
         $gameMessage.setChoiceBackground(0);
         $gameMessage.setChoicePositionType(2);
         $gameMessage.setChoiceCallback(n => {
-            subject.elementMode = new PrimalElement(parameterRepository, n);
+            for (var i = 0; i < 6; ++i) {
+                subject.removeState(Number(parameterRepository.actorsStateId[i + 1]));
+            }
+            subject.elementMode = new PrimalElement(parameterRepository, n + 1);
+            subject.addState(Number(parameterRepository.actorsStateId[n + 1]));
+            log.displayAutoAffectedStatus(subject);
         });
     };
 
-    // 攻撃を受けたらイベントを発生させる
+    // 敵のモードチェンジスキル
+    var changeEnemiesMode = function(subject, id, log) {
+        for (var i = 0; i < 6; ++i) {
+            subject.removeState(Number(parameterRepository.enemiesStateId[i + 1]));
+        }
+        subject.elementMode = new PrimalElement(parameterRepository, id);
+        subject.addState(Number(parameterRepository.enemiesStateId[id]));
+        log.displayAutoAffectedStatus(subject);
+    }
+
+    // スキルの使用をフック
     var Window_BattleLog_startAction = Window_BattleLog.prototype.startAction;
     Window_BattleLog.prototype.startAction = function(subject, action, targets) {
         Window_BattleLog_startAction.call(this, subject, action, targets);
 
         if(action.isSkill()){
             var item = action.item();
+            var id = item.meta["ModeChange"];
 
             // モードチェンジスキルだったらモードを遷移する
-            if (item.meta["ModeChange"]) {
-                changeMode(subject);
+            if (id == 0 && subject instanceof Game_Actor) {
+                changeMode(subject, this);
+            }
+            else if (id != undefined && subject instanceof Game_Enemy) {
+                changeEnemiesMode(subject, id, this);
             }
         }
     };
@@ -353,14 +383,6 @@ class MagicLevelCalculator {
             return new PrimalElement(parameterRepository, Number(modeState.meta["ElementMode"]));
         }
         return null;
-    }
-
-    // モードチェンジ検知
-    var Window_BattleLog_displayAddedStates_base = Window_BattleLog.prototype.displayAddedStates;
-    Window_BattleLog.prototype.displayAddedStates = function(target) {
-        Window_BattleLog_displayAddedStates_base.call(this, target);
-
-        target.elementMode = findElementModeInStates(target.result().addedStateObjects());
     }
 
     // バトル開始時の敵/アクターのモードを読み込み
