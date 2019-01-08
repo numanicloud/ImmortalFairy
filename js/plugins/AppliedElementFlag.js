@@ -313,14 +313,41 @@ class MagicLevelCalculator {
     var parameterRepository = new ParameterRepository();
     var toleranceKnowledge = new ToleranceKnowledge(parameterRepository);
     var magicLevelCalculator = new MagicLevelCalculator(parameterRepository);
+    var modeChangeChocices = [
+        "\\I[77]\\C[21]打撃属性 (逆:\\I[76])",
+        "\\I[76]\\C[4]切削属性 (逆:\\I[77])",
+        "\\I[64]\\C[21]燃焼属性 (逆:\\I[65])",
+        "\\I[65]\\C[4]冷却属性 (逆:\\I[64])",
+        "\\I[02]\\C[21]中毒属性 (逆:\\I[70])",
+        "\\I[70]\\C[4]呪霊属性 (逆:\\I[02])",
+    ];
 
-    var Game_BattlerBase_onSkillApplied_base = Game_BattlerBase.prototype.onSkillApplied;
-    Game_BattlerBase.prototype.onSkillApplied = function(subject, item) {
-        Game_BattlerBase_onSkillApplied_base.call(this, subject, item);
-        //toleranceKnowledge.updateAi(subject, item, this);
-    }
+    var changeMode = function(subject) {
+        $gameMessage.add("\\>どの属性モードに遷移しますか？\n\\>遷移した属性に抵抗を持ち、逆の属性に弱点を持ちます。\n\\>遷移した属性の魔法を使ったときに\n\\>効き目レベルが+1されます。");
+        $gameMessage.setChoices(modeChangeChocices, -1, -1);
+        $gameMessage.setChoiceBackground(0);
+        $gameMessage.setChoicePositionType(2);
+        $gameMessage.setChoiceCallback(n => {
+            subject.elementMode = new PrimalElement(parameterRepository, n);
+        });
+    };
 
-    findElementModeInStates = function(states) {
+    // 攻撃を受けたらイベントを発生させる
+    var Window_BattleLog_startAction = Window_BattleLog.prototype.startAction;
+    Window_BattleLog.prototype.startAction = function(subject, action, targets) {
+        Window_BattleLog_startAction.call(this, subject, action, targets);
+
+        if(action.isSkill()){
+            var item = action.item();
+
+            // モードチェンジスキルだったらモードを遷移する
+            if (item.meta["ModeChange"]) {
+                changeMode(subject);
+            }
+        }
+    };
+
+    var findElementModeInStates = function(states) {
         var modeState = states.find(st => st.meta["ElementMode"] != undefined);
         if (modeState != undefined) {
             return new PrimalElement(parameterRepository, Number(modeState.meta["ElementMode"]));
